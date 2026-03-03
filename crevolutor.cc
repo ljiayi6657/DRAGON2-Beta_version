@@ -975,6 +975,7 @@ TCREvolutor3D::TCREvolutor3D(Galaxy* gal1)  {
    dimz = coord->GetDimZ();
    dimE = coord->GetDimE();
    
+
    riac1    = vector<double>(dimx*dimy*dimz*dimE,0);
    riac2    = vector<double>(dimx*dimy*dimz*dimE,0);
    riac3    = vector<double>(dimx*dimy*dimz*dimE,0);
@@ -1119,14 +1120,41 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
 	int bin=0;
 	for (int ip = 0; ip < dimE; ip++) if(totmomentum[ip]<dperp->Getrho_b()) bin=ip;
    
-   double dperpfactor[dimE];
-   double dppfactor[dimE];
+   double dperpfactor[dimx][dimE];
+   double dppfactor[dimx][dimE];
+   vector<double> x = (gal->GetCoordinates()->GetX());
+   vector<double> y = (gal->GetCoordinates()->GetY());
+   vector<double> z = (gal->GetCoordinates()->GetZ());
    
-	for (int ip = 0; ip < dimE; ip++){
-		if(ip<=bin) dperpfactor[ip] = (A==0) ? 1.0 : pow(A/fabs(Z),dperp->GetDelta());
-		else dperpfactor[ip] = (A==0) ? 1.0 : pow(A/fabs(Z),dperp->GetDelta_h());
-		dppfactor[ip]=1.0/dperpfactor[ip];
-	}
+	// for (int ip = 0; ip < dimE; ip++){
+	// 	if(ip<=bin) dperpfactor[ip] = (A==0) ? 1.0 : pow(A/fabs(Z),dperp->GetDelta());
+	// 	else dperpfactor[ip] = (A==0) ? 1.0 : pow(A/fabs(Z),dperp->GetDelta_h());
+	// 	dppfactor[ip]=1.0/dperpfactor[ip];
+	// }
+
+   for (int i = 0; i < dimx; i++) {
+      for (int j = 0; j < dimy; j++) {
+         double r_cur = sqrt (x[i]*x[i] + y[j]*y[j]);
+         for (int ip = 0; ip < dimE; ip++) {
+         if (A == 0) dperpfactor[i][ip];
+
+         else{
+            if (ip<bin){
+               if (in->VariableDelta == true) dperpfactor[i][ip] = pow(A/fabs(Z), in->delta_B + in->delta_A*r_cur);
+               else  dperpfactor[i][ip] = pow(A/fabs(Z),dperp->GetDelta());
+            }
+            else {
+               if (in->VariableDelta == true) dperpfactor[i][ip] = pow(A/fabs(Z), in->delta_B + in->delta_A*r_cur);
+               else  dperpfactor[i][ip] = pow(A/fabs(Z),dperp->GetDelta_h());
+            }
+
+         }
+         dppfactor[i][ip]=1.0/dperpfactor[i][ip];
+      }
+      
+      }
+   }
+   
    
    vector<double> gamma(coord->GetGamma());
    
