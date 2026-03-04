@@ -1459,6 +1459,7 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         
                         //                     if(counter==0 && i==28 && j==20) cout << "TEST A " << A << " ip " << ip << " k " << k << " | " << CNalphaz1 << " " << CNalphaz2 << " " << CNalphaz3 << " " << vC1k << " " << vCk << " " << vCk1 << " " << xsec[ip] << " " << decay << " " << lifetime << " " << gamma[ip] << " " << injfactor << " " << spectrum[ip] << endl;
                         
+                        
                         dzz[k] = 1. + CNalphaz2*halfdt_dperp_factor[i][ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip + halfdt*vCk;//CHECK!!! IG
                         uodzz[k] = -CNalphaz3*halfdt_dperp_factor[i][ip]-halfdt*vCk1;
                         lodzz[k] = -CNalphaz1*halfdt_dperp_factor[i][ip]-halfdt*vC1k;
