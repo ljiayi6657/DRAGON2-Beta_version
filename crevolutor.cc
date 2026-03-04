@@ -1182,7 +1182,7 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
             double dpp1 = 0.0;
             
             for (ip = 1; ip < dimE-1; ip++) {
-               if (dpp) dpp1 = dppfactor[ip]*dpp->GetReaccelerationCoefficient(indspat);
+               if (dpp) dpp1 = dppfactor[i][ip]*dpp->GetReaccelerationCoefficient(indspat);
                
                double momentumup = totmomentum[ip+1];
                double momentumfix = totmomentum[ip];
@@ -1255,8 +1255,11 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
    double halfdtbar = 0.0;
    double halfdt = 0.0;
    
-   double halfdt_dperp_factor[dimE];
-	for(int e=0;e<dimE;e++) halfdt_dperp_factor[e]=0.;
+   double halfdt_dperp_factor[dimx][dimE];
+   for (int ii=0; ii < dimr; ii++) {
+      for(int e=0;e<dimE;e++) halfdt_dperp_factor[ii][e]=0.;
+   }
+	
    
    const double decay = (daughter!=0);
    int Niter = 0;
@@ -1281,7 +1284,10 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
       
       halfdtbar = 0.5*dtbar;
       halfdt    = 0.5*dt;
-      for(int e=0;e<dimE;e++) halfdt_dperp_factor[e] = halfdt*dperpfactor[e];
+      for (int ii = 0; ii < dimx; ii++){
+         for(int e=0;e<dimE;e++) halfdt_dperp_factor[ii][e] = halfdt*dperpfactor[ii][e];
+      }
+      
       
       //*******************************************
       for (Niter = 0; Niter < in->Nrept; ++Niter) {
@@ -1345,9 +1351,9 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         double CNalphax2 = dperp->GetCNdiff_alpha2_x(ind);
                         double CNalphax3 = dperp->GetCNdiff_alpha3_x(ind);
                         
-                        dxx[i] = 1. + CNalphax2*halfdt_dperp_factor[ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip ;//CHECK!!! IG
-                        uodxx[i] = -CNalphax3*halfdt_dperp_factor[ip];
-                        lodxx[i] = -CNalphax1*halfdt_dperp_factor[ip];
+                        dxx[i] = 1. + CNalphax2*halfdt_dperp_factor[i][ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip ;//CHECK!!! IG
+                        uodxx[i] = -CNalphax3*halfdt_dperp_factor[i][ip];
+                        lodxx[i] = -CNalphax1*halfdt_dperp_factor[i][ip];
                         
                         Rxx[i] = N[index(i,j,k,ip)]*(2.0-dxx[i]) + source->GetSource(indspat)*dtbar_injfactor_spec_ip + SecSource_[ind]*dtbar;
                         
@@ -1393,9 +1399,9 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         double CNalphay2 = dperp->GetCNdiff_alpha2_y(ind);
                         double CNalphay3 = dperp->GetCNdiff_alpha3_y(ind);
                         
-                        dyy[j] = 1. + CNalphay2*halfdt_dperp_factor[ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip ;//CHECK!!! IG
-                        uodyy[j] = -CNalphay3*halfdt_dperp_factor[ip];
-                        lodyy[j] = -CNalphay1*halfdt_dperp_factor[ip];
+                        dyy[j] = 1. + CNalphay2*halfdt_dperp_factor[j][ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip ;//CHECK!!! IG
+                        uodyy[j] = -CNalphay3*halfdt_dperp_factor[j][ip];
+                        lodyy[j] = -CNalphay1*halfdt_dperp_factor[j][ip];
                         
                         Ryy[j] = N[index(i,j,k,ip)]*(2.0-dyy[j]) + source->GetSource(indspat)*dtbar_injfactor_spec_ip + SecSource_[ind]*dtbar;
                         
@@ -1453,9 +1459,9 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         
                         //                     if(counter==0 && i==28 && j==20) cout << "TEST A " << A << " ip " << ip << " k " << k << " | " << CNalphaz1 << " " << CNalphaz2 << " " << CNalphaz3 << " " << vC1k << " " << vCk << " " << vCk1 << " " << xsec[ip] << " " << decay << " " << lifetime << " " << gamma[ip] << " " << injfactor << " " << spectrum[ip] << endl;
                         
-                        dzz[k] = 1. + CNalphaz2*halfdt_dperp_factor[ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip + halfdt*vCk;//CHECK!!! IG
-                        uodzz[k] = -CNalphaz3*halfdt_dperp_factor[ip]-halfdt*vCk1;
-                        lodzz[k] = -CNalphaz1*halfdt_dperp_factor[ip]-halfdt*vC1k;
+                        dzz[k] = 1. + CNalphaz2*halfdt_dperp_factor[i][ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip + halfdt*vCk;//CHECK!!! IG
+                        uodzz[k] = -CNalphaz3*halfdt_dperp_factor[i][ip]-halfdt*vCk1;
+                        lodzz[k] = -CNalphaz1*halfdt_dperp_factor[i][ip]-halfdt*vC1k;
                         
                         //  				        cout << "[MW-DEBUG Z] " << i << " " << j << " " << k << " | " << CNalphaz1 << " " << CNalphaz2 << " " << CNalphaz3 << " " << vC1k << " " << vCk << " " << vCk1 << " | " << lodzz[k] << " " << dzz[k] << " "  << uodzz[k] << endl;
                         
