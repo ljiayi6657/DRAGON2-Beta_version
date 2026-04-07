@@ -1,3 +1,15 @@
 /output
 
+# Autotools/configure outputs
+/autom4te.cache/
+/config.log
+
+# Build outputs
+/*.o
+/.libs/
+/cparamlib/*.o
+/cparamlib/.libs/
+
+# Generated runtime data
+/data/BUBBLE.DAT
 
