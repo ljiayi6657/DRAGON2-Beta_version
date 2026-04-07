@@ -162,6 +162,16 @@ protected:
         if(iz>=dimz) iz = dimz - 1;      
         return (ip*dimz + iz)*dimr+ir;
     }
+
+    inline int index_xyzp(int ip, int iz, int iy, int ix) {
+        if(ix<0) ix = 0;
+        if(iy<0) iy = 0;
+        if(iz<0) iz = 0;
+        if(ix>=dimx) ix = dimx - 1;
+        if(iy>=dimy) iy = dimy - 1;
+        if(iz>=dimz) iz = dimz - 1;
+        return ((ip*dimz + iz)*dimy + iy)*dimx + ix;
+    }
     
     // 2D
     vector<double> dperp;
