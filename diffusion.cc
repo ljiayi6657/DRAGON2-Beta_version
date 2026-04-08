@@ -365,61 +365,153 @@ TDiffusionCoefficient3D::TDiffusionCoefficient3D(TGrid* Coord, Input* in, TSourc
   vector<double> dz_down = Coord->GetDeltaZ_down();
 
   if (diffT == Isotropic) {
-    
-    for ( int i = 0; i < pp.size(); ++i ){
-      double rho_n = in->D_ref_rig;
-      
-      //sp.push_back(in->D0*pow(beta[i], in->etaT)*pow(pp[i]/D_ref_rig, delta)); //MW130621
-      if(rho_n<=rho_b){
-	if(pp[i]<=rho_b) sp.push_back(in->D0*pow(beta[i], in->etaT)*pow(pp[i]/rho_n, delta));
-	if(pp[i]>rho_b)  sp.push_back(in->D0*pow(beta[i], in->etaT)*pow(pp[i]/rho_b, delta_h)*pow(rho_b/rho_n, delta));
-      }
-      if(rho_n>rho_b){
-	if(pp[i]<=rho_b) sp.push_back(in->D0*pow(beta[i], in->etaT)*pow(rho_b/rho_n, delta_h)*pow(pp[i]/rho_b, delta));
-	if(pp[i]>rho_b)  sp.push_back(in->D0*pow(beta[i], in->etaT)*pow(pp[i]/rho_n, delta_h));
-      }
-    }
-    
-    for (unsigned int i = 0; i < dimx; ++i) {
-      for (unsigned int j = 0; j < dimy; ++j) {
-	//double radius = sqrt(x[i]*x[i]+y[j]*y[j]);
-	for (unsigned int k = 0; k < dimz; ++k) {
-	  //double zeta = z[j];
-	  double dperp_profile = GetProfile(x[i], y[j], z[k], SourceTerm);
-	  
-	  //mw, 130326, 130415
-	  double spiral_factor_dperp = max( min( pow(geom->GetPattern(i,j,k), in->SA_diff), in->SA_cut_diff), 1./in->SA_cut_diff );
-	  dperp.push_back( dperp_profile * pow( in->LB_diff, Coord->IsInLocalBubble(x[i],y[j],z[k]) ) * spiral_factor_dperp);
-	  //                     phix.push_back(GetXDerivative(x[i], y[j], z[k], SourceTerm));
-	  //                     phiy.push_back(GetYDerivative(x[i], y[j], z[k], SourceTerm));
-	  //                     phiz.push_back(GetZDerivative(x[i], y[j], z[k], SourceTerm));
-	}
-      }
-    }
-        
-    //MW130625: order correct?
-    for (unsigned int i = 0; i < dimx; ++i) {
-      double dx_central = 0.5 * (dx_up[i]+dx_down[i]);
-            
-      for (unsigned int j = 0; j < dimy; ++j) {
-	double dy_central = 0.5 * (dy_up[j]+dy_down[j]);
-                
-	for (unsigned int k = 0; k < dimz; ++k) {
-	  double dz_central = 0.5 * (dz_up[k]+dz_down[k]);
-                    
-	  //MW130624: Trying to gain speed at the cost of memory...
-	  //Tests gave me a speed up of 45% with no considerable memory loss!
-	  double indspat       = index(i,j,k);
-	  double indspat_xup   = index(i+1,j,k);
-	  double indspat_xdown = index(i-1,j,k);
-	  double indspat_yup   = index(i,j+1,k);
-	  double indspat_ydown = index(i,j-1,k);
-	  double indspat_zup   = index(i,j,k+1);
-	  double indspat_zdown = index(i,j,k-1);
 
-	  for  (int ip = 0; ip < dimE; ip++) {
-       
-	    double sp_ = sp[ip];
+    if (in->VariableDelta == false) {
+      for (int i = 0; i < pp.size(); ++i) {
+        double rho_n = in->D_ref_rig;
+
+        if (rho_n <= rho_b) {
+          if (pp[i] <= rho_b) {
+            sp.push_back(in->D0 * pow(beta[i], in->etaT) * pow(pp[i] / rho_n, delta));
+          }
+          if (pp[i] > rho_b) {
+            sp.push_back(in->D0 * pow(beta[i], in->etaT) * pow(pp[i] / rho_b, delta_h) * pow(rho_b / rho_n, delta));
+          }
+        }
+        if (rho_n > rho_b) {
+          if (pp[i] <= rho_b) {
+            sp.push_back(in->D0 * pow(beta[i], in->etaT) * pow(rho_b / rho_n, delta_h) * pow(pp[i] / rho_b, delta));
+          }
+          if (pp[i] > rho_b) {
+            sp.push_back(in->D0 * pow(beta[i], in->etaT) * pow(pp[i] / rho_n, delta_h));
+          }
+        }
+      }
+    } else {
+      double delta_A = in->delta_A;
+      double delta_B = in->delta_B;
+      double min_obs_dist = 1e100;
+      int ixsun = 0;
+      int iysun = 0;
+      int izsun = 0;
+
+      cout << "building 3D diff. coeff. with variable delta(r) = Ar + B " << endl;
+      cout << delta_A << "r + " << delta_B << endl;
+
+      for (int ix = 0; ix < dimx; ++ix) {
+        for (int iy = 0; iy < dimy; ++iy) {
+          for (int iz = 0; iz < dimz; ++iz) {
+            double dx_obs = x[ix] - in->xobs;
+            double dy_obs = y[iy] - in->yobs;
+            double dz_obs = z[iz] - in->zobs;
+            double obs_dist = dx_obs * dx_obs + dy_obs * dy_obs + dz_obs * dz_obs;
+            if (obs_dist < min_obs_dist) {
+              min_obs_dist = obs_dist;
+              ixsun = ix;
+              iysun = iy;
+              izsun = iz;
+            }
+          }
+        }
+      }
+
+      for (int ip = 0; ip < dimE; ++ip) {
+        for (int iz = 0; iz < dimz; ++iz) {
+          for (int iy = 0; iy < dimy; ++iy) {
+            for (int ix = 0; ix < dimx; ++ix) {
+              double rho_n = in->D_ref_rig;
+              double current_r = sqrt(x[ix] * x[ix] + y[iy] * y[iy]);
+              double current_delta = delta_A * current_r + delta_B;
+
+              if (current_r > in->diff_threshold) {
+                current_delta = delta_A * in->diff_threshold + delta_B;
+              }
+
+              double current_delta_hi = current_delta;
+              double current_sp = 0.0;
+
+              if (rho_n <= rho_b) {
+                if (pp[ip] <= rho_b) {
+                  current_sp = in->D0 * pow(beta[ip], in->etaT) * pow(pp[ip] / rho_n, current_delta);
+                }
+                if (pp[ip] > rho_b) {
+                  current_sp = in->D0 * pow(beta[ip], in->etaT) * pow(pp[ip] / rho_b, current_delta_hi) * pow(rho_b / rho_n, current_delta);
+                }
+              }
+              if (rho_n > rho_b) {
+                if (pp[ip] <= rho_b) {
+                  current_sp = in->D0 * pow(beta[ip], in->etaT) * pow(rho_b / rho_n, current_delta_hi) * pow(pp[ip] / rho_b, current_delta);
+                }
+                if (pp[ip] > rho_b) {
+                  current_sp = in->D0 * pow(beta[ip], in->etaT) * pow(pp[ip] / rho_n, current_delta_hi);
+                }
+              }
+
+              spectrum_extended.push_back(current_sp);
+
+              if (ix == ixsun && iy == iysun && iz == izsun) {
+                sp.push_back(current_sp);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for (unsigned int i = 0; i < dimx; ++i) {
+      for (unsigned int j = 0; j < dimy; ++j) {
+        for (unsigned int k = 0; k < dimz; ++k) {
+          double dperp_profile = GetProfile(x[i], y[j], z[k], SourceTerm);
+
+          double spiral_factor_dperp = max(min(pow(geom->GetPattern(i, j, k), in->SA_diff), in->SA_cut_diff), 1. / in->SA_cut_diff);
+          dperp.push_back(dperp_profile * pow(in->LB_diff, Coord->IsInLocalBubble(x[i], y[j], z[k])) * spiral_factor_dperp);
+        }
+      }
+    }
+
+    for (unsigned int i = 0; i < dimx; ++i) {
+      double dx_central = 0.5 * (dx_up[i] + dx_down[i]);
+
+      for (unsigned int j = 0; j < dimy; ++j) {
+        double dy_central = 0.5 * (dy_up[j] + dy_down[j]);
+
+        for (unsigned int k = 0; k < dimz; ++k) {
+          double dz_central = 0.5 * (dz_up[k] + dz_down[k]);
+
+          double indspat = index(i, j, k);
+          double indspat_xup = index(i + 1, j, k);
+          double indspat_xdown = index(i - 1, j, k);
+          double indspat_yup = index(i, j + 1, k);
+          double indspat_ydown = index(i, j - 1, k);
+          double indspat_zup = index(i, j, k + 1);
+          double indspat_zdown = index(i, j, k - 1);
+
+          for (int ip = 0; ip < dimE; ip++) {
+            double sp_ = 0.0;
+            double sp_xup_ = 0.0;
+            double sp_xdown_ = 0.0;
+            double sp_yup_ = 0.0;
+            double sp_ydown_ = 0.0;
+            double sp_zup_ = 0.0;
+            double sp_zdown_ = 0.0;
+
+            if (in->VariableDelta == false) {
+              sp_ = sp[ip];
+              sp_xup_ = sp_;
+              sp_xdown_ = sp_;
+              sp_yup_ = sp_;
+              sp_ydown_ = sp_;
+              sp_zup_ = sp_;
+              sp_zdown_ = sp_;
+            } else {
+              sp_ = spectrum_extended[index_xyzp(ip, k, j, i)];
+              sp_xup_ = spectrum_extended[index_xyzp(ip, k, j, i + 1)];
+              sp_xdown_ = spectrum_extended[index_xyzp(ip, k, j, i - 1)];
+              sp_yup_ = spectrum_extended[index_xyzp(ip, k, j + 1, i)];
+              sp_ydown_ = spectrum_extended[index_xyzp(ip, k, j - 1, i)];
+              sp_zup_ = spectrum_extended[index_xyzp(ip, k + 1, j, i)];
+              sp_zdown_ = spectrum_extended[index_xyzp(ip, k - 1, j, i)];
+            }
 
 	    //MW130624: This would be the place to account for a spatial dependency of Delta
 	    // Question: Which places are there that use sp[] and dperp[]?
@@ -438,30 +530,27 @@ TDiffusionCoefficient3D::TDiffusionCoefficient3D(TGrid* Coord, Input* in, TSourc
 	    //                             if(pp[ip]>rho_b)  sp = in->D0*pow(beta[ip], in->etaT)*pow(pp[ip]/rho_n, delta_h_loc);
 	    //                         }
 
-	    double D       = dperp[indspat]*sp_;
-	    double D_xup   = dperp[indspat_xup]*sp_;
-	    double D_xdown = dperp[indspat_xdown]*sp_;
-	    double D_yup   = dperp[indspat_yup]*sp_;
-	    double D_ydown = dperp[indspat_ydown]*sp_;
-	    double D_zup   = dperp[indspat_zup]*sp_;
-	    double D_zdown = dperp[indspat_zdown]*sp_;
-        
-	    CNdiff_alpha1_x.push_back(D/(dx_central*dx_down[i]) - (D_xup-D_xdown)/(4*dx_central*dx_central));
-	    CNdiff_alpha2_x.push_back(D/(dx_central*dx_up[i]) + D/(dx_down[i]*dx_central));
-	    CNdiff_alpha3_x.push_back((D_xup-D_xdown)/(4*dx_central*dx_central) + D/(dx_up[i]*dx_central));
-                        
-	    CNdiff_alpha1_y.push_back(D/(dy_central*dy_down[j]) - (D_yup-D_ydown)/(4*dy_central*dy_central));
-	    CNdiff_alpha2_y.push_back(D/(dy_central*dy_up[j]) + D/(dy_down[j]*dy_central));
-	    CNdiff_alpha3_y.push_back((D_yup-D_ydown)/(4*dy_central*dy_central) + D/(dy_up[j]*dy_central));
-                        
-	    CNdiff_alpha1_z.push_back(D/(dz_central*dz_down[k]) - (D_zup-D_zdown)/(4*dz_central*dz_central));
-	    CNdiff_alpha2_z.push_back(D/(dz_central*dz_up[k]) + D/(dz_down[k]*dz_central));
-	    CNdiff_alpha3_z.push_back((D_zup-D_zdown)/(4*dz_central*dz_central) + D/(dz_up[k]*dz_central));
-                        
-	    //                         cout << "lets see " << i << " " << j << " " << k << " " << ip << " " << sp_ << " " << index(i,j,k) << " " << dz_up[k] << " " << dz_down[k] << " " << dz_central << " " << D << " " << D_zup << " " << D_zdown << " " << CNdiff_alpha1_z.back() << "  " << CNdiff_alpha2_z.back() << "  " << CNdiff_alpha3_z.back() << "  " << endl;
-	    //                         CNdiff_alpha1_x.back() << "  " << CNdiff_alpha2_x.back() << "  " << CNdiff_alpha3_x.back() << "  " << CNdiff_alpha1_y.back() << "  " << CNdiff_alpha2_y.back() << "  " << CNdiff_alpha3_y.back() << "  "
-	  }
-	}
+            double D = dperp[indspat] * sp_;
+            double D_xup = dperp[indspat_xup] * sp_xup_;
+            double D_xdown = dperp[indspat_xdown] * sp_xdown_;
+            double D_yup = dperp[indspat_yup] * sp_yup_;
+            double D_ydown = dperp[indspat_ydown] * sp_ydown_;
+            double D_zup = dperp[indspat_zup] * sp_zup_;
+            double D_zdown = dperp[indspat_zdown] * sp_zdown_;
+
+            CNdiff_alpha1_x.push_back(D / (dx_central * dx_down[i]) - (D_xup - D_xdown) / (4 * dx_central * dx_central));
+            CNdiff_alpha2_x.push_back(D / (dx_central * dx_up[i]) + D / (dx_down[i] * dx_central));
+            CNdiff_alpha3_x.push_back((D_xup - D_xdown) / (4 * dx_central * dx_central) + D / (dx_up[i] * dx_central));
+
+            CNdiff_alpha1_y.push_back(D / (dy_central * dy_down[j]) - (D_yup - D_ydown) / (4 * dy_central * dy_central));
+            CNdiff_alpha2_y.push_back(D / (dy_central * dy_up[j]) + D / (dy_down[j] * dy_central));
+            CNdiff_alpha3_y.push_back((D_yup - D_ydown) / (4 * dy_central * dy_central) + D / (dy_up[j] * dy_central));
+
+            CNdiff_alpha1_z.push_back(D / (dz_central * dz_down[k]) - (D_zup - D_zdown) / (4 * dz_central * dz_central));
+            CNdiff_alpha2_z.push_back(D / (dz_central * dz_up[k]) + D / (dz_down[k] * dz_central));
+            CNdiff_alpha3_z.push_back((D_zup - D_zdown) / (4 * dz_central * dz_central) + D / (dz_up[k] * dz_central));
+          }
+        }
       }
     }
   }

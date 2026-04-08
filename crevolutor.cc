@@ -975,6 +975,7 @@ TCREvolutor3D::TCREvolutor3D(Galaxy* gal1)  {
    dimz = coord->GetDimZ();
    dimE = coord->GetDimE();
    
+
    riac1    = vector<double>(dimx*dimy*dimz*dimE,0);
    riac2    = vector<double>(dimx*dimy*dimz*dimE,0);
    riac3    = vector<double>(dimx*dimy*dimz*dimE,0);
@@ -1128,6 +1129,7 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
 		dppfactor[ip]=1.0/dperpfactor[ip];
 	}
    
+   
    vector<double> gamma(coord->GetGamma());
    
    // main loops
@@ -1229,6 +1231,7 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
    
    double halfdt_dperp_factor[dimE];
 	for(int e=0;e<dimE;e++) halfdt_dperp_factor[e]=0.;
+	
    
    const double decay = (daughter!=0);
    int Niter = 0;
@@ -1254,6 +1257,7 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
       halfdtbar = 0.5*dtbar;
       halfdt    = 0.5*dt;
       for(int e=0;e<dimE;e++) halfdt_dperp_factor[e] = halfdt*dperpfactor[e];
+      
       
       //*******************************************
       for (Niter = 0; Niter < in->Nrept; ++Niter) {
@@ -1424,6 +1428,7 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         }
                         
                         //                     if(counter==0 && i==28 && j==20) cout << "TEST A " << A << " ip " << ip << " k " << k << " | " << CNalphaz1 << " " << CNalphaz2 << " " << CNalphaz3 << " " << vC1k << " " << vCk << " " << vCk1 << " " << xsec[ip] << " " << decay << " " << lifetime << " " << gamma[ip] << " " << injfactor << " " << spectrum[ip] << endl;
+                        
                         
                         dzz[k] = 1. + CNalphaz2*halfdt_dperp_factor[ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip + halfdt*vCk;//CHECK!!! IG
                         uodzz[k] = -CNalphaz3*halfdt_dperp_factor[ip]-halfdt*vCk1;
@@ -2619,6 +2624,5 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
    
    return;
 }
-
 
 

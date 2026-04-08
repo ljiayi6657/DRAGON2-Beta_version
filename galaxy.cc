@@ -327,17 +327,38 @@ TReaccelerationCoefficient::TReaccelerationCoefficient(vector<double> pp, TDiffu
     }
 
 
-vector<double> r_vec = dperp->GetCoord()->GetR();
-if (in->VariableDelta == true){
-  for (int ir=0; ir<dimr; ir++) {
-    for (unsigned int k = 0; k < dimz; ++k) {
-      double izr = index(ir,k);
-      double aVar = in->delta_A*r_vec[ir]+in->delta_B;
-      dpp[izr] *= 1.0/(aVar*(4.-aVar)*(4.-aVar*aVar));
+  if (in->VariableDelta == true) {
+    if (dperp->GetCoord()->GetType() == "3D") {
+      vector<double> x_vec = dperp->GetCoord()->GetX();
+      vector<double> y_vec = dperp->GetCoord()->GetY();
+      for (int ix = 0; ix < dimx; ix++) {
+        for (int iy = 0; iy < dimy; iy++) {
+          double rVar = sqrt(x_vec[ix] * x_vec[ix] + y_vec[iy] * y_vec[iy]);
+          if (rVar > in->diff_threshold) {
+            rVar = in->diff_threshold;
+          }
+          double aVar = in->delta_A * rVar + in->delta_B;
+          double dpp_factor = 1.0 / (aVar * (4. - aVar) * (4. - aVar * aVar));
+          for (unsigned int iz = 0; iz < dimz; ++iz) {
+            dpp[index(ix, iy, iz)] *= dpp_factor;
+          }
+        }
+      }
+    } else {
+      vector<double> r_vec = dperp->GetCoord()->GetR();
+      for (int ir = 0; ir < dimr; ir++) {
+        for (unsigned int k = 0; k < dimz; ++k) {
+          double izr = index(ir, k);
+          double rVar = r_vec[ir];
+          if (rVar > in->diff_threshold) {
+            rVar = in->diff_threshold;
+          }
+          double aVar = in->delta_A * rVar + in->delta_B;
+          dpp[izr] *= 1.0 / (aVar * (4. - aVar) * (4. - aVar * aVar));
+        }
+      }
     }
   }
-  
- }
 
 }
 
