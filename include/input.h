@@ -179,6 +179,7 @@ public:
    double diff_threshold;
    double delta_A;
    double delta_B;
+   double delta_Z;
    double rho_b; /**< Power law index of energy dependence of diffusion coefficient. */
    double index_radial; /**< Power law index of the scaling of diffusion coefficient with sources in the radial direction. */
    bool DIFFUSION; //fk 130701

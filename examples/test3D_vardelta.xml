@@ -47,6 +47,7 @@
     <DiffusionThreshold value="8.3"/>
     <deltaA value = "0.0180722891566265"/>
     <deltaB value = "0.35"/>
+    <deltaZ value = "0.0"/>
     <zt value="4" />          <!-- Scale heigth of the diffusion coefficient, useful in Exp mode: D(z) \propto exp(z/zt) (optional) -->
     <etaT value="1." />       <!-- Low energy correction factor of the diffusion coefficient: D \propto beta^etaT  -->
   </Diffusion>

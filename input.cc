@@ -449,9 +449,11 @@ int Input::LoadFile(const string inputfilename) {
 
 			VariableDelta = QueryIntAttributeWithDefault("VariableDelta",el1,0);
 			diff_threshold = QueryDoubleAttributeWithDefault("DiffusionThreshold",el1,11.);
+			delta_Z = 0.;
 			if (VariableDelta == 1) {
 				delta_A = QueryDoubleAttributeWithDefault("deltaA",el1,0.);		
 				delta_B = QueryDoubleAttributeWithDefault("deltaB",el1,delta);		
+				delta_Z = QueryDoubleAttributeWithDefault("deltaZ",el1,0.);
 			}
 
 			rho_b = QueryDoubleAttribute("rho_b", el1);
@@ -1027,6 +1029,7 @@ void Input::Print() {
 	if (VariableDelta == 1) {
 		cout << "deltaA = " << delta_A << endl;		
 		cout << "deltaB = " << delta_B << endl;
+		cout << "deltaZ = " << delta_Z << endl;
 	}
 
 	cout << "DPar = " << Dpar << endl;
