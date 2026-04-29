@@ -44,6 +44,7 @@
     <DiffRefRig value = "4" /> <!-- Reference rigidity for the normalization of the diffusion coefficient -->
     <Delta value="0.5" />    <!-- Slope of the diffusion coefficient spectrum -->
     <VariableDelta value="0"/>
+    <DiffusionZLinearSlope value="0.0"/> <!-- 3D isotropic diffusion amplitude factor: D -> D * (1 + value * |z/kpc|) -->
     <zt value="4" />          <!-- Scale heigth of the diffusion coefficient, useful in Exp mode: D(z) \propto exp(z/zt) (optional) -->
     <etaT value="1." />       <!-- Low energy correction factor of the diffusion coefficient: D \propto beta^etaT  -->
   </Diffusion>

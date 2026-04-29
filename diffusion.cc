@@ -463,9 +463,10 @@ TDiffusionCoefficient3D::TDiffusionCoefficient3D(TGrid* Coord, Input* in, TSourc
       for (unsigned int j = 0; j < dimy; ++j) {
         for (unsigned int k = 0; k < dimz; ++k) {
           double dperp_profile = GetProfile(x[i], y[j], z[k], SourceTerm);
+          double z_linear_factor = 1.0 + in->DiffusionZLinearSlope * fabs(z[k]);
 
           double spiral_factor_dperp = max(min(pow(geom->GetPattern(i, j, k), in->SA_diff), in->SA_cut_diff), 1. / in->SA_cut_diff);
-          dperp.push_back(dperp_profile * pow(in->LB_diff, Coord->IsInLocalBubble(x[i], y[j], z[k])) * spiral_factor_dperp);
+          dperp.push_back(dperp_profile * z_linear_factor * pow(in->LB_diff, Coord->IsInLocalBubble(x[i], y[j], z[k])) * spiral_factor_dperp);
         }
       }
     }

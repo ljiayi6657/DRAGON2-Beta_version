@@ -449,6 +449,11 @@ int Input::LoadFile(const string inputfilename) {
 
 			VariableDelta = QueryIntAttributeWithDefault("VariableDelta",el1,0);
 			diff_threshold = QueryDoubleAttributeWithDefault("DiffusionThreshold",el1,11.);
+			DiffusionZLinearSlope = QueryDoubleAttributeWithDefault("DiffusionZLinearSlope",el1,0.);
+			if (DiffusionZLinearSlope < 0.) {
+				cerr << "DiffusionZLinearSlope must be >= 0 because it is a linear |z| amplitude increase. You chose: " << DiffusionZLinearSlope << endl;
+				exit(DIFFMODEL);
+			}
 			delta_Z = 0.;
 			if (VariableDelta == 1) {
 				delta_A = QueryDoubleAttributeWithDefault("deltaA",el1,0.);		
@@ -1025,6 +1030,7 @@ void Input::Print() {
 	cout << "etaT = " << etaT << endl;
 	cout << "Delta = " << delta << endl;
 	cout << "index_radial = " << index_radial << endl;
+	cout << "DiffusionZLinearSlope = " << DiffusionZLinearSlope << endl;
 
 	if (VariableDelta == 1) {
 		cout << "deltaA = " << delta_A << endl;		
