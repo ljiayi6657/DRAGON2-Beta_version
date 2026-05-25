@@ -390,13 +390,14 @@ TDiffusionCoefficient3D::TDiffusionCoefficient3D(TGrid* Coord, Input* in, TSourc
     } else {
       double delta_A = in->delta_A;
       double delta_B = in->delta_B;
+      double delta_Z = in->delta_Z;
       double min_obs_dist = 1e100;
       int ixsun = 0;
       int iysun = 0;
       int izsun = 0;
 
-      cout << "building 3D diff. coeff. with variable delta(r) = Ar + B " << endl;
-      cout << delta_A << "r + " << delta_B << endl;
+      cout << "building 3D diff. coeff. with variable delta(r,z) = Ar + B + Z|z| " << endl;
+      cout << delta_A << "r + " << delta_B << " + " << delta_Z << "|z|" << endl;
 
       for (int ix = 0; ix < dimx; ++ix) {
         for (int iy = 0; iy < dimy; ++iy) {
@@ -421,10 +422,10 @@ TDiffusionCoefficient3D::TDiffusionCoefficient3D(TGrid* Coord, Input* in, TSourc
             for (int ix = 0; ix < dimx; ++ix) {
               double rho_n = in->D_ref_rig;
               double current_r = sqrt(x[ix] * x[ix] + y[iy] * y[iy]);
-              double current_delta = delta_A * current_r + delta_B;
+              double current_delta = delta_A * current_r + delta_B + delta_Z * fabs(z[iz]);
 
               if (current_r > in->diff_threshold) {
-                current_delta = delta_A * in->diff_threshold + delta_B;
+                current_delta = delta_A * in->diff_threshold + delta_B + delta_Z * fabs(z[iz]);
               }
 
               double current_delta_hi = current_delta;

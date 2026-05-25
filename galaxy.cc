@@ -266,9 +266,9 @@ TReaccelerationCoefficient::TReaccelerationCoefficient(vector<double> pp, TDiffu
   for (unsigned int i = 0; i < pp.size(); ++i){
     if(pp[i] < in->rho_b){
       if (in->VariableDelta == true)
-	a = (in->DiffT == Anisotropic) ? in->DeltaPar : in->delta_B + in->delta_A*in->robs;
+		a = (in->DiffT == Anisotropic) ? in->DeltaPar : in->delta_B + in->delta_A*in->robs + in->delta_Z*fabs(in->zobs);
       else
-	a = (in->DiffT == Anisotropic) ? in->DeltaPar : dperp->GetDelta(); //MW130711: integrate Anisotropic Diffusion
+		a = (in->DiffT == Anisotropic) ? in->DeltaPar : dperp->GetDelta(); //MW130711: integrate Anisotropic Diffusion
     }
     else
       a = (in->DiffT == Anisotropic) ? in->DeltaPar : dperp->GetDelta_h();
@@ -331,15 +331,16 @@ TReaccelerationCoefficient::TReaccelerationCoefficient(vector<double> pp, TDiffu
     if (dperp->GetCoord()->GetType() == "3D") {
       vector<double> x_vec = dperp->GetCoord()->GetX();
       vector<double> y_vec = dperp->GetCoord()->GetY();
+      vector<double> z_vec = dperp->GetCoord()->GetZ();
       for (int ix = 0; ix < dimx; ix++) {
         for (int iy = 0; iy < dimy; iy++) {
           double rVar = sqrt(x_vec[ix] * x_vec[ix] + y_vec[iy] * y_vec[iy]);
           if (rVar > in->diff_threshold) {
             rVar = in->diff_threshold;
           }
-          double aVar = in->delta_A * rVar + in->delta_B;
-          double dpp_factor = 1.0 / (aVar * (4. - aVar) * (4. - aVar * aVar));
           for (unsigned int iz = 0; iz < dimz; ++iz) {
+            double aVar = in->delta_A * rVar + in->delta_B + in->delta_Z * fabs(z_vec[iz]);
+            double dpp_factor = 1.0 / (aVar * (4. - aVar) * (4. - aVar * aVar));
             dpp[index(ix, iy, iz)] *= dpp_factor;
           }
         }
