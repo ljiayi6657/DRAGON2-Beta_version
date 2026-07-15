@@ -290,6 +290,7 @@ TReaccelerationCoefficient::TReaccelerationCoefficient(vector<double> pp, TDiffu
   dimx = dperp->GetDimX();
   dimy = dperp->GetDimY();
   dimz = dperp->GetDimZ();
+  dimE = pp.size();
   vector<double> DiffProfile = (in->DiffT == Anisotropic) ? dperp->GetDPar() : dperp->GetDiffusionCoefficient();
     
   if(dperp->GetCoord()->GetType() == "3D")
@@ -332,16 +333,21 @@ TReaccelerationCoefficient::TReaccelerationCoefficient(vector<double> pp, TDiffu
       vector<double> x_vec = dperp->GetCoord()->GetX();
       vector<double> y_vec = dperp->GetCoord()->GetY();
       vector<double> z_vec = dperp->GetCoord()->GetZ();
+      double reacceleration_type_factor = (in->diff_reacc == 1) ? 4.0/3.0 : 1.0;
+      dpp_extended.resize(dpp.size()*dimE);
       for (int ix = 0; ix < dimx; ix++) {
         for (int iy = 0; iy < dimy; iy++) {
-          double rVar = sqrt(x_vec[ix] * x_vec[ix] + y_vec[iy] * y_vec[iy]);
-          if (rVar > in->diff_threshold) {
-            rVar = in->diff_threshold;
-          }
-          for (unsigned int iz = 0; iz < dimz; ++iz) {
-            double aVar = in->delta_A * rVar + in->delta_B + in->delta_Z * fabs(z_vec[iz]);
-            double dpp_factor = 1.0 / (aVar * (4. - aVar) * (4. - aVar * aVar));
-            dpp[index(ix, iy, iz)] *= dpp_factor;
+          double radius = sqrt(x_vec[ix]*x_vec[ix] + y_vec[iy]*y_vec[iy]);
+          for (int iz = 0; iz < dimz; ++iz) {
+            int indspat = index(ix, iy, iz);
+            double local_delta = in->GetLocalDelta(radius, z_vec[iz]);
+            double delta_factor = 1.0/(local_delta*(4.0-local_delta)*(4.0-local_delta*local_delta));
+            for (int ip = 0; ip < dimE; ++ip) {
+              double local_diffusion_spectrum = dperp->GetSpectrum(indspat, ip);
+              dpp_extended[indspat*dimE+ip] = dpp[indspat]*reacceleration_type_factor*delta_factor
+                                             *in->vAlfven*in->vAlfven*pp[ip]*pp[ip]
+                                             /local_diffusion_spectrum;
+            }
           }
         }
       }

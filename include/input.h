@@ -40,6 +40,7 @@ public:
    Input() { } /**< The default constructor. */
    int LoadFile(const string);
    void Print();
+   double GetLocalDelta(double r, double z) const;
    
    //  Input(char* run, double& Ekfact_, int& Nr, int& Nz, double& D0_, double& zt_, double& zmax_, double& delta_, double& index_radial_, double& ab_C_, double& ab_N_, double& vA_, double& vC_, double& dvdz_conv_, double etaT_, char* profile);
    /**< Constructor given individual data. This is used when doing MCMC. */
@@ -175,7 +176,7 @@ public:
    double etaT; /**< index of dependence of the diffusion coefficient with \beta. */
    double delta; /**< Power law index of energy dependence of diffusion coefficient. */
    double delta_h; /**< Power law index of energy dependence of diffusion coefficient. */
-   int VariableDelta; /**< if this flag is activated, delta is a function of R */
+   int VariableDelta; /**< If enabled, delta is a function of galactocentric radius and |z|. */
    double diff_threshold;
    double delta_A;
    double delta_B;

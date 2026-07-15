@@ -30,6 +30,20 @@ TDiffusionCoefficient::TDiffusionCoefficient(TGrid* Coord, Input* in, TSource* S
   delta = in->delta;
   delta_h = in->delta_h;
   rho_b = in->rho_b;
+  variable_delta = (in->VariableDelta == true);
+}
+double TDiffusionCoefficient::GetSpectrum(int isp, int ip) {
+  if (!variable_delta || _fCoordinates->GetType() != "3D") return sp[ip];
+
+  int iz = isp % dimz;
+  int spatial_xy = isp / dimz;
+  int iy = spatial_xy % dimy;
+  int ix = spatial_xy / dimy;
+  return spectrum_extended[index_xyzp(ip, iz, iy, ix)];
+}
+
+double TDiffusionCoefficient::GetDiffusionCoefficient(int isp, int ip) {
+  return dperp[isp] * GetSpectrum(isp, ip);
 }
 
 double TDiffusionCoefficient::GetProfile(double x, double y, double zeta, TSource* SourceTerm) {
@@ -422,11 +436,7 @@ TDiffusionCoefficient3D::TDiffusionCoefficient3D(TGrid* Coord, Input* in, TSourc
             for (int ix = 0; ix < dimx; ++ix) {
               double rho_n = in->D_ref_rig;
               double current_r = sqrt(x[ix] * x[ix] + y[iy] * y[iy]);
-              double current_delta = delta_A * current_r + delta_B + delta_Z * fabs(z[iz]);
-
-              if (current_r > in->diff_threshold) {
-                current_delta = delta_A * in->diff_threshold + delta_B + delta_Z * fabs(z[iz]);
-              }
+              double current_delta = in->GetLocalDelta(current_r, z[iz]);
 
               double current_delta_hi = current_delta;
               double current_sp = 0.0;

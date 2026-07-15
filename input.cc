@@ -15,6 +15,7 @@
 #include <string>
 #include <stdlib.h>
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 #include <vector>
 
@@ -65,6 +66,12 @@ double Input::QueryDoubleAttributeWithDefault(string obj, TiXmlElement* el, doub
 	if (el1) el1->QueryDoubleAttribute("value", &result);
 	return result;
 }
+double Input::GetLocalDelta(double r, double z) const {
+	double effective_r = r;
+	if (effective_r > diff_threshold) effective_r = diff_threshold;
+	return delta_B + delta_A*effective_r + delta_Z*std::fabs(z);
+}
+
 
 string Input::QueryStringAttribute(string obj, TiXmlElement* el) {
 	TiXmlElement* el1 = el->FirstChildElement(obj);
@@ -453,6 +460,10 @@ int Input::LoadFile(const string inputfilename) {
 				delta_A = QueryDoubleAttributeWithDefault("deltaA",el1,0.);		
 				delta_B = QueryDoubleAttributeWithDefault("deltaB",el1,delta);		
 				delta_Z = QueryDoubleAttributeWithDefault("deltaZ",el1,0.);
+				if (gridtype == "3D") {
+					if (delta < 0.) delta = delta_B;
+					if (delta_h < 0.) delta_h = delta;
+				}
 			}
 
 			rho_b = QueryDoubleAttribute("rho_b", el1);
@@ -940,10 +951,33 @@ int Input::LoadFile(const string inputfilename) {
 		exit(PROBINPUT);
 	}
 
+	if (VariableDelta == 1 && gridtype == "3D") {
+		if (DiffT == Anisotropic) {
+			cerr << "VariableDelta is currently supported only for 3D isotropic diffusion." << endl;
+			exit(PROBINPUT);
+		}
+		if (!std::isfinite(diff_threshold) || !std::isfinite(delta_A) ||
+		    !std::isfinite(delta_B) || !std::isfinite(delta_Z) ||
+		    diff_threshold < 0. || delta_A < 0. || delta_Z < 0.) {
+			cerr << "3D VariableDelta requires non-negative DiffusionThreshold, deltaA and deltaZ." << endl;
+			exit(PROBINPUT);
+		}
+		double maximum_r = std::min(Rmax, diff_threshold);
+		double minimum_delta = GetLocalDelta(0., 0.);
+		double maximum_delta = GetLocalDelta(maximum_r, zmax);
+		if (!std::isfinite(minimum_delta) || !std::isfinite(maximum_delta) || minimum_delta <= 0.) {
+			cerr << "3D VariableDelta produces a non-finite or non-positive diffusion index." << endl;
+			exit(PROBINPUT);
+		}
+		if (REACC && maximum_delta >= 2.) {
+			cerr << "3D VariableDelta with reacceleration requires delta(r,z) < 2 everywhere." << endl;
+			exit(PROBINPUT);
+		}
+	}
+
 	delete doc;
 
 	cout << "Input file read successfully!" << endl;
-
 	return 0;
 }
 

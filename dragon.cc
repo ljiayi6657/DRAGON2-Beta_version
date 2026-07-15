@@ -659,6 +659,12 @@ void DRAGON::Print() {
 			cr_robs = in->robs,
 			cr_zobs = in->zobs;
 
+	int cr_variable_delta = in->VariableDelta;
+	double cr_delta_A = (in->VariableDelta == 1) ? in->delta_A : 0.0;
+	double cr_delta_B = (in->VariableDelta == 1) ? in->delta_B : in->delta;
+	double cr_delta_Z = (in->VariableDelta == 1) ? in->delta_Z : 0.0;
+	double cr_diff_threshold = in->diff_threshold;
+
 	double cr_xmin, cr_xmax, cr_ymin, cr_ymax, cr_xobs, cr_yobs; //DG28.11.2013
 	if (in->gridtype == "3D") {
 		cr_xmin = -in->Rmax;
@@ -762,6 +768,20 @@ void DRAGON::Print() {
 			fits_report_error(stderr, status);
 		if (fits_write_key(output_ptr, TDOUBLE, (char*) "ind_diff",  &cr_ind_diff,        NULL, &status))
 			fits_report_error(stderr, status);
+		if (in->gridtype == "3D") {
+			if (fits_write_key(output_ptr, TINT,    (char*) "vardelta", &cr_variable_delta, NULL, &status))
+				fits_report_error(stderr, status);
+			if (in->VariableDelta == 1) {
+				if (fits_write_key(output_ptr, TDOUBLE, (char*) "delta_a",  &cr_delta_A,          NULL, &status))
+					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr, TDOUBLE, (char*) "delta_b",  &cr_delta_B,          NULL, &status))
+					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr, TDOUBLE, (char*) "delta_z",  &cr_delta_Z,          NULL, &status))
+					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr, TDOUBLE, (char*) "diffrthr", &cr_diff_threshold,   NULL, &status))
+					fits_report_error(stderr, status);
+			}
+		}
 		if (fits_write_key(output_ptr, TDOUBLE, (char*) "He_ab",     &cr_He_abundance,    NULL, &status))
 			fits_report_error(stderr, status);
 		if (fits_write_key(output_ptr, TDOUBLE, (char*) "sprefrig",  &cr_sp_ref_rig,      NULL, &status))
@@ -846,6 +866,20 @@ void DRAGON::Print() {
 			fits_report_error(stderr, status);
 		if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "ind_diff",  &cr_ind_diff,        NULL, &status))
 			fits_report_error(stderr, status);
+		if (in->gridtype == "3D") {
+			if (fits_write_key(output_ptr_sp, TINT,    (char*) "vardelta", &cr_variable_delta, NULL, &status))
+				fits_report_error(stderr, status);
+			if (in->VariableDelta == 1) {
+				if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "delta_a",  &cr_delta_A,          NULL, &status))
+					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "delta_b",  &cr_delta_B,          NULL, &status))
+					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "delta_z",  &cr_delta_Z,          NULL, &status))
+					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "diffrthr", &cr_diff_threshold,   NULL, &status))
+					fits_report_error(stderr, status);
+			}
+		}
 		if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "He_ab",     &cr_He_abundance,    NULL, &status))
 			fits_report_error(stderr, status);
 		if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "sprefrig",  &cr_sp_ref_rig,      NULL, &status))

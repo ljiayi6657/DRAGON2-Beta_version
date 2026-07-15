@@ -42,11 +42,12 @@ public:
     
     inline double GetDiffusionCoefficient(int i /**< Linearized position index. */) { return dperp[i]; }
 
-    inline double GetDiffusionCoefficient(int isp /**< Linearized position index. */, int ip /**< Energy index. */) { return dperp[isp]*sp[ip];  cout << "[MW-DEBUG] called GetDiffusionCoefficient(isp,ip)"<<endl; }
+    double GetDiffusionCoefficient(int isp /**< Linearized position index. */, int ip /**< Energy index. */);
 
     inline double GetDiffusionCoefficient(int ir /**< Radial index. */, int iz /**< Vertical index. */, int ip /**< Energy index. */) { return dperp[index(ir,iz)]*sp[ip];  cout << "[MW-DEBUG] called GetDiffusionCoefficient(ir,iz,ip)"<<endl; }
 
     inline double GetSpectrum(int i /**< Energy index. */) { return sp[i]; cout << "[MW-DEBUG] called GetSpectrum(i)"<<endl; }
+    double GetSpectrum(int isp /**< Linearized position index. */, int ip /**< Energy index. */);
     inline double GetDelta() { return delta; }
     /**< Retrieve delta. */
     inline double GetDelta_h() { return delta_h; }
@@ -181,6 +182,7 @@ protected:
     
     vector<double> sp;
     vector<double> spectrum_extended;
+    bool variable_delta;
     double delta; /**< Power-law index of the energy dependence of the diffusion coefficient below rho_b. */
     double delta_h; /**< Power-law index of the energy dependence of the diffusion coefficient above rho_b. */
     double rho_b;
