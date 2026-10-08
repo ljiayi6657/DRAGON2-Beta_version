@@ -838,7 +838,7 @@ double TParticle2D::GetFluxAtSunPosition(int j) {
    double r2 = (in->robs-r[irsun])/(r[irsun+1]-r[irsun]);
    double weight = 1;
    if (A != 0) weight = double(A);
-   return density[TParticle::index(irsun,izsun,j)]*r1 + density[TParticle::index(irsun+1,izsun,j)]*r2;
+   return weight*(density[TParticle::index(irsun,izsun,j)]*r1 + density[TParticle::index(irsun+1,izsun,j)]*r2);
 
 }
 
@@ -1721,7 +1721,7 @@ double TParticle3D::GetFluxAtSunPosition(int j) {
    double r2 = (in->robs-r[irsun])/(r[irsun+1]-r[irsun]);
    double weight = 1;
    if (A != 0) weight = double(A);
-   return density[index(irsun,(dimy-1)/2,izsun,j)]*r1 + density[index(irsun+1,(dimy-1)/2,izsun,j)]*r2;
+   return weight*(density[index(irsun,(dimy-1)/2,izsun,j)]*r1 + density[index(irsun+1,(dimy-1)/2,izsun,j)]*r2);
 
 }
 
