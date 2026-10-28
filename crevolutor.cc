@@ -27,6 +27,48 @@
 #include <sstream>
 #include <fstream>
 
+namespace {
+
+void GetSpeciesCNAlphas3D(TDiffusionCoefficient* dperp, TGrid* coord,
+                           int ix, int iy, int iz, int ip, char direction,
+                           const vector<double>& species_factor,
+                           double& alpha1, double& alpha2, double& alpha3) {
+   int index_up = 0;
+   int index_down = 0;
+   double delta_up = 0.0;
+   double delta_down = 0.0;
+
+   if (direction == 'x') {
+      index_up = coord->indexD(ix + 1, iy, iz);
+      index_down = coord->indexD(ix - 1, iy, iz);
+      delta_up = coord->GetDeltaX_up(ix);
+      delta_down = coord->GetDeltaX_down(ix);
+   } else if (direction == 'y') {
+      index_up = coord->indexD(ix, iy + 1, iz);
+      index_down = coord->indexD(ix, iy - 1, iz);
+      delta_up = coord->GetDeltaY_up(iy);
+      delta_down = coord->GetDeltaY_down(iy);
+   } else {
+      index_up = coord->indexD(ix, iy, iz + 1);
+      index_down = coord->indexD(ix, iy, iz - 1);
+      delta_up = coord->GetDeltaZ_up(iz);
+      delta_down = coord->GetDeltaZ_down(iz);
+   }
+
+   int index_central = coord->indexD(ix, iy, iz);
+   double diffusion = dperp->GetDiffusionCoefficient(index_central, ip)*species_factor[index_central];
+   double diffusion_up = dperp->GetDiffusionCoefficient(index_up, ip)*species_factor[index_up];
+   double diffusion_down = dperp->GetDiffusionCoefficient(index_down, ip)*species_factor[index_down];
+   double delta_central = 0.5*(delta_up + delta_down);
+   double gradient = (diffusion_up - diffusion_down)/(4.0*delta_central*delta_central);
+
+   alpha1 = diffusion/(delta_central*delta_down) - gradient;
+   alpha2 = diffusion/(delta_central*delta_up) + diffusion/(delta_down*delta_central);
+   alpha3 = gradient + diffusion/(delta_up*delta_central);
+}
+
+} // namespace
+
 using namespace std;
 
 TCREvolutor::TCREvolutor(Galaxy* gal1) {
@@ -1120,14 +1162,30 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
 	int bin=0;
 	for (int ip = 0; ip < dimE; ip++) if(totmomentum[ip]<dperp->Getrho_b()) bin=ip;
    
-   double dperpfactor[dimE];
-   double dppfactor[dimE];
-   
-	for (int ip = 0; ip < dimE; ip++){
-		if(ip<=bin) dperpfactor[ip] = (A==0) ? 1.0 : pow(A/fabs(Z),dperp->GetDelta());
-		else dperpfactor[ip] = (A==0) ? 1.0 : pow(A/fabs(Z),dperp->GetDelta_h());
-		dppfactor[ip]=1.0/dperpfactor[ip];
-	}
+   vector<double> dperpfactor(dimE, 1.0);
+   vector<double> dppfactor(dimE, 1.0);
+   bool use_local_delta = (in->VariableDelta == true);
+   vector<double> spatial_dperpfactor(dimx*dimy*dimz, 1.0);
+   if (use_local_delta) {
+      vector<double> x_coordinates = coord->GetX();
+      vector<double> y_coordinates = coord->GetY();
+      vector<double> z_coordinates = coord->GetZ();
+      for (int ix = 0; ix < dimx; ++ix) {
+         for (int iy = 0; iy < dimy; ++iy) {
+            double radius = sqrt(x_coordinates[ix]*x_coordinates[ix] + y_coordinates[iy]*y_coordinates[iy]);
+            for (int iz = 0; iz < dimz; ++iz) {
+               int spatial_index = coord->indexD(ix, iy, iz);
+               spatial_dperpfactor[spatial_index] = (A == 0) ? 1.0 : pow(A/fabs(Z), in->GetLocalDelta(radius, z_coordinates[iz]));
+            }
+         }
+      }
+   } else {
+      for (int energy_index = 0; energy_index < dimE; ++energy_index) {
+         if (energy_index <= bin) dperpfactor[energy_index] = (A == 0) ? 1.0 : pow(A/fabs(Z), dperp->GetDelta());
+         else dperpfactor[energy_index] = (A == 0) ? 1.0 : pow(A/fabs(Z), dperp->GetDelta_h());
+         dppfactor[energy_index] = 1.0/dperpfactor[energy_index];
+      }
+   }
    
    
    vector<double> gamma(coord->GetGamma());
@@ -1156,8 +1214,6 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
             double dpp1 = 0.0;
             
             for (ip = 1; ip < dimE-1; ip++) {
-               if (dpp) dpp1 = dppfactor[ip]*dpp->GetReaccelerationCoefficient(indspat);
-               
                double momentumup = totmomentum[ip+1];
                double momentumfix = totmomentum[ip];
                double momentumdown = totmomentum[ip-1];
@@ -1178,8 +1234,18 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                }
                
                if (dpp) {
-                  double dppfix = dpp1*dpp->GetSpectrum(ip);
-                  double dppdown = dpp1*dpp->GetSpectrum(ip-1);
+                  double dppfix = 0.0;
+                  double dppdown = 0.0;
+                  if (use_local_delta) {
+                     double species_recovery = 1.0/spatial_dperpfactor[indspat];
+                     dppfix = species_recovery*dpp->GetReaccelerationCoefficient(indspat, ip);
+                     dppdown = species_recovery*dpp->GetReaccelerationCoefficient(indspat, ip-1);
+                  } else {
+                     dpp1 = dppfactor[ip]*dpp->GetReaccelerationCoefficient(indspat);
+                     dppfix = dpp1*dpp->GetSpectrum(ip);
+                     dppdown = dpp1*dpp->GetSpectrum(ip-1);
+                  }
+
                   riac1[ind] = 2.0*dppfix/(updown)/(upfix);
                   riac2[ind] = ( - (dppfix-dppdown)/(fixdown*fixdown) +
                                 2.0*dppfix*(1.0/(updown)*(1.0/(upfix) + 1.0/(fixdown)) +
@@ -1256,7 +1322,7 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
       
       halfdtbar = 0.5*dtbar;
       halfdt    = 0.5*dt;
-      for(int e=0;e<dimE;e++) halfdt_dperp_factor[e] = halfdt*dperpfactor[e];
+      for(int e=0;e<dimE;e++) halfdt_dperp_factor[e] = halfdt*(use_local_delta ? 1.0 : dperpfactor[e]);
       
       
       //*******************************************
@@ -1320,6 +1386,9 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         double CNalphax1 = dperp->GetCNdiff_alpha1_x(ind);
                         double CNalphax2 = dperp->GetCNdiff_alpha2_x(ind);
                         double CNalphax3 = dperp->GetCNdiff_alpha3_x(ind);
+                        if (use_local_delta) {
+                           GetSpeciesCNAlphas3D(dperp, coord, i, j, k, ip, 'x', spatial_dperpfactor, CNalphax1, CNalphax2, CNalphax3);
+                        }
                         
                         dxx[i] = 1. + CNalphax2*halfdt_dperp_factor[ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip ;//CHECK!!! IG
                         uodxx[i] = -CNalphax3*halfdt_dperp_factor[ip];
@@ -1368,6 +1437,9 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         double CNalphay1 = dperp->GetCNdiff_alpha1_y(ind);
                         double CNalphay2 = dperp->GetCNdiff_alpha2_y(ind);
                         double CNalphay3 = dperp->GetCNdiff_alpha3_y(ind);
+                        if (use_local_delta) {
+                           GetSpeciesCNAlphas3D(dperp, coord, i, j, k, ip, 'y', spatial_dperpfactor, CNalphay1, CNalphay2, CNalphay3);
+                        }
                         
                         dyy[j] = 1. + CNalphay2*halfdt_dperp_factor[ip]+  totalgas->GetGas(indspat)*halfdtbar_xsec_ip  +  halfdtbar_lifetime_gamma_ip ;//CHECK!!! IG
                         uodyy[j] = -CNalphay3*halfdt_dperp_factor[ip];
@@ -1414,6 +1486,9 @@ void TCREvolutor3D::Run(vector<double>& N, vector<double>& N_previous, TInelasti
                         double CNalphaz1 = dperp->GetCNdiff_alpha1_z(ind);
                         double CNalphaz2 = dperp->GetCNdiff_alpha2_z(ind);
                         double CNalphaz3 = dperp->GetCNdiff_alpha3_z(ind);
+                        if (use_local_delta) {
+                           GetSpeciesCNAlphas3D(dperp, coord, i, j, k, ip, 'z', spatial_dperpfactor, CNalphaz1, CNalphaz2, CNalphaz3);
+                        }
                         
                         //moved to galaxy.cc MW130624
                         double vCk = 0.0; // vC(i)

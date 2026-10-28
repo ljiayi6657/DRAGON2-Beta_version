@@ -111,17 +111,17 @@ public:
     TReaccelerationCoefficient() {} /**< Default constructor. */
     TReaccelerationCoefficient(vector<double> /**< Momentum. */, TDiffusionCoefficient* /**< Diffusion coefficient. */, TGeometry*, Input*);
     /**< Constructor given vA and the diffusion coefficient. */
-    ~TReaccelerationCoefficient() { dpp.clear(); sp.clear(); }
+    ~TReaccelerationCoefficient() { dpp.clear(); sp.clear(); dpp_extended.clear(); }
     /**< Destructor. */
     
     inline const vector<double>& GetReaccelerationCoefficient() const { return dpp; }
     /**< Obtain dpp. */
     inline double GetReaccelerationCoefficient(int i /**< Linearized position index. */) { return dpp[i]; }
     /**< Obtain dpp at given linearized position. */
-    inline double GetReaccelerationCoefficient(int isp /**< Linearized position index. */, int ip /**< Energy index. */) { return dpp[isp]*sp[ip]; }
+    inline double GetReaccelerationCoefficient(int isp /**< Linearized position index. */, int ip /**< Energy index. */) { return dpp_extended.empty() ? dpp[isp]*sp[ip] : dpp_extended[isp*dimE+ip]; }
     /**< Obtain the diffusion coefficient in momentum space at given linearized position and energy. */
-    inline double GetReaccelerationCoefficient(int ir /**< Radial index. */, int iz /**< Vertical index. */, int ip /**< Energy index. */) { return dpp[index(ir,iz)]*sp[ip]; }
-    inline double GetReaccelerationCoefficient(int ix /**< Radial index. */, int iy, int iz /**< Vertical index. */, int ip /**< Energy index. */) { return dpp[index(ix,iy,iz)]*sp[ip]; }
+    inline double GetReaccelerationCoefficient(int ir /**< Radial index. */, int iz /**< Vertical index. */, int ip /**< Energy index. */) { return GetReaccelerationCoefficient(index(ir,iz), ip); }
+    inline double GetReaccelerationCoefficient(int ix /**< Radial index. */, int iy, int iz /**< Vertical index. */, int ip /**< Energy index. */) { return GetReaccelerationCoefficient(index(ix,iy,iz), ip); }
     /**< Obtain the diffusion coefficient in momentum space at given position and energy. */
     inline const vector<double>& GetSpectrum() const { return sp; }
     /**< Obtain the energy spectrum. */
@@ -131,10 +131,12 @@ public:
 protected:
     vector<double> dpp; /**< Spatial profile. */
     vector<double> sp; /**< Energy spectrum. */
+    vector<double> dpp_extended; /**< Full position-energy coefficient for 3D variable delta. */
     int dimr; /**< Radial dimension of simulation box. */
     int dimx; /**< Radial dimension of simulation box. */
     int dimy; /**< Radial dimension of simulation box. */
     int dimz; /**< Vertical dimension of simulation box. */
+    int dimE; /**< Energy dimension. */
     
     inline int index(int ir /**< Radial index. */, int iz /**< Vertical index. */)
     {
