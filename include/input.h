@@ -178,6 +178,7 @@ public:
    double delta_h; /**< Power law index of energy dependence of diffusion coefficient. */
    int VariableDelta; /**< If enabled, delta is a function of galactocentric radius and |z|. */
    double diff_threshold;
+   double z_threshold;
    double delta_A;
    double delta_B;
    double delta_Z;

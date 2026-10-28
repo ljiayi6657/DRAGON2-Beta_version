@@ -69,7 +69,9 @@ double Input::QueryDoubleAttributeWithDefault(string obj, TiXmlElement* el, doub
 double Input::GetLocalDelta(double r, double z) const {
 	double effective_r = r;
 	if (effective_r > diff_threshold) effective_r = diff_threshold;
-	return delta_B + delta_A*effective_r + delta_Z*std::fabs(z);
+	double effective_z = std::fabs(z);
+	if (z_threshold > 0. && effective_z > z_threshold) effective_z = z_threshold;
+	return delta_B + delta_A*effective_r + delta_Z*effective_z;
 }
 
 
@@ -456,6 +458,7 @@ int Input::LoadFile(const string inputfilename) {
 
 			VariableDelta = QueryIntAttributeWithDefault("VariableDelta",el1,0);
 			diff_threshold = QueryDoubleAttributeWithDefault("DiffusionThreshold",el1,11.);
+			z_threshold = QueryDoubleAttributeWithDefault("DiffusionThresholdZ",el1,0.);
 			if (VariableDelta == 1) {
 				delta_A = QueryDoubleAttributeWithDefault("deltaA",el1,0.);		
 				delta_B = QueryDoubleAttributeWithDefault("deltaB",el1,delta);		
@@ -956,13 +959,13 @@ int Input::LoadFile(const string inputfilename) {
 			cerr << "VariableDelta is currently supported only for 3D isotropic diffusion." << endl;
 			exit(PROBINPUT);
 		}
-		if (!std::isfinite(diff_threshold) || !std::isfinite(delta_A) ||
+		if (!std::isfinite(diff_threshold) || !std::isfinite(z_threshold) || !std::isfinite(delta_A) ||
 		    !std::isfinite(delta_B) || !std::isfinite(delta_Z) ||
-		    diff_threshold < 0. || delta_A < 0. || delta_Z < 0.) {
-			cerr << "3D VariableDelta requires non-negative DiffusionThreshold, deltaA and deltaZ." << endl;
+		    diff_threshold < 0. || z_threshold < 0. || delta_A < 0. || delta_Z < 0.) {
+			cerr << "3D VariableDelta requires non-negative diffusion thresholds, deltaA and deltaZ." << endl;
 			exit(PROBINPUT);
 		}
-		double maximum_r = std::min(Rmax, diff_threshold);
+		double maximum_r = std::min(std::sqrt(2.)*Rmax, diff_threshold);
 		double minimum_delta = GetLocalDelta(0., 0.);
 		double maximum_delta = GetLocalDelta(maximum_r, zmax);
 		if (!std::isfinite(minimum_delta) || !std::isfinite(maximum_delta) || minimum_delta <= 0.) {
@@ -1060,6 +1063,8 @@ void Input::Print() {
 	cout << "index_radial = " << index_radial << endl;
 
 	if (VariableDelta == 1) {
+		cout << "DiffusionThreshold = " << diff_threshold << endl;
+		cout << "DiffusionThresholdZ = " << z_threshold << endl;
 		cout << "deltaA = " << delta_A << endl;		
 		cout << "deltaB = " << delta_B << endl;
 		cout << "deltaZ = " << delta_Z << endl;

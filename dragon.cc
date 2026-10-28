@@ -664,6 +664,7 @@ void DRAGON::Print() {
 	double cr_delta_B = (in->VariableDelta == 1) ? in->delta_B : in->delta;
 	double cr_delta_Z = (in->VariableDelta == 1) ? in->delta_Z : 0.0;
 	double cr_diff_threshold = in->diff_threshold;
+	double cr_zthreshold = in->z_threshold;
 
 	double cr_xmin, cr_xmax, cr_ymin, cr_ymax, cr_xobs, cr_yobs; //DG28.11.2013
 	if (in->gridtype == "3D") {
@@ -780,6 +781,8 @@ void DRAGON::Print() {
 					fits_report_error(stderr, status);
 				if (fits_write_key(output_ptr, TDOUBLE, (char*) "diffrthr", &cr_diff_threshold,   NULL, &status))
 					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr, TDOUBLE, (char*) "diffzthr", &cr_zthreshold,       NULL, &status))
+					fits_report_error(stderr, status);
 			}
 		}
 		if (fits_write_key(output_ptr, TDOUBLE, (char*) "He_ab",     &cr_He_abundance,    NULL, &status))
@@ -878,6 +881,8 @@ void DRAGON::Print() {
 					fits_report_error(stderr, status);
 				if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "diffrthr", &cr_diff_threshold,   NULL, &status))
 					fits_report_error(stderr, status);
+				if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "diffzthr", &cr_zthreshold,       NULL, &status))
+					fits_report_error(stderr, status);
 			}
 		}
 		if (fits_write_key(output_ptr_sp, TDOUBLE, (char*) "He_ab",     &cr_He_abundance,    NULL, &status))
@@ -936,5 +941,4 @@ void DRAGON::Print() {
 		delete [] array;
 	}
 }
-
 

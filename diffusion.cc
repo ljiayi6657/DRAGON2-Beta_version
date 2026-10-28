@@ -410,8 +410,10 @@ TDiffusionCoefficient3D::TDiffusionCoefficient3D(TGrid* Coord, Input* in, TSourc
       int iysun = 0;
       int izsun = 0;
 
-      cout << "building 3D diff. coeff. with variable delta(r,z) = Ar + B + Z|z| " << endl;
-      cout << delta_A << "r + " << delta_B << " + " << delta_Z << "|z|" << endl;
+      cout << "building 3D diff. coeff. with thresholded variable delta(r,z)" << endl;
+      cout << delta_A << "*min(r," << in->diff_threshold << ") + " << delta_B << " + " << delta_Z;
+      if (in->z_threshold > 0.) cout << "*min(|z|," << in->z_threshold << ")" << endl;
+      else cout << "*|z|" << endl;
 
       for (int ix = 0; ix < dimx; ++ix) {
         for (int iy = 0; iy < dimy; ++iy) {
